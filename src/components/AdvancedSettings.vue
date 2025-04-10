@@ -14,7 +14,7 @@ const props = defineProps<{
     </div>
     <el-form label-position="top">
       <el-form-item label="Performance" for="performance-select">
-        <el-select 
+        <el-select
           id="performance-select"
           v-model="params.performance_selection" 
           class="full-width"

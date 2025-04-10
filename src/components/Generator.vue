@@ -5,7 +5,9 @@
       <div v-if="generationStore.state.results.length" class="image-grid">
         <div v-for="(image, index) in generationStore.state.results" 
              :key="`${index}-${generationStore.state.version}`" 
-             class="image-item">
+             class="image-item"
+             draggable="true"
+             @dragstart="(event) => handleDragStart(image, event)">
           <el-image
             :src="image"
             :preview-src-list="generationStore.state.results"
@@ -36,7 +38,7 @@
             @update:modelValue="updateParams"
             class="prompt-input"
           />
-          <el-button 
+          <el-button
             type="primary"
             :loading="generationStore.state.isGenerating"
             class="generate-btn"
@@ -49,25 +51,20 @@
         </div>
       </div>
     </div>
-
-    <!-- Checkbox -->
-    <div class="checkbox-section">
-      <el-checkbox v-model="showAdvancedSettings" @change="emitAdvancedSettings">Advanced</el-checkbox>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, onMounted, ref } from 'vue'
+import { reactive, watch, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { GenerateParams } from '../types'
-import { generationStore } from './stores/generationStore'
+import { generationStore } from '@/stores/generationStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
 const props = defineProps<{
   params: GenerateParams
-  styles: any[]
+  styles: any[] 
   models: any
   configs: any
 }>()
@@ -82,16 +79,6 @@ const emit = defineEmits<{
 }>()
 
 const localParams = reactive({ ...props.params })
-
-const showAdvancedSettings = ref(false) // Ensure the panel is hidden by default
-
-const emitAdvancedSettings = () => {
-  emit('update:modelValue', showAdvancedSettings.value)
-}
-
-watch(() => props.params, (newParams) => {
-  Object.assign(localParams, newParams)
-}, { deep: true })
 
 const updateParams = () => {
   emit('update:params', localParams)
@@ -152,7 +139,7 @@ const handleGenerate = async () => {
           case 'finish':
             console.log('Results/Finish event received:', eventData)
             if (eventData.data.images?.length) {
-              const urls = eventData.data.images.map(url => getImageUrl(url))
+              const urls = eventData.data.images.map((url: string) => getImageUrl(url))
               generationStore.setResults(urls)
               if (eventData.event === 'finish') {
                 generationStore.state.isGenerating = false
@@ -177,8 +164,14 @@ const handleGenerate = async () => {
   } catch (error) {
     generationStore.state.isGenerating = false
     console.error('Generation error:', error)
-    ElMessage.error(error.message || 'Generation failed')
+    const errorMessage = error instanceof Error ? error.message : 'Generation failed'
+    ElMessage.error(errorMessage)
   }
+}
+
+const handleDragStart = (image: string, event: DragEvent) => {
+  console.log('Drag start detected:', image)
+  event.dataTransfer?.setData('text/plain', image)
 }
 </script>
 
@@ -187,11 +180,12 @@ const handleGenerate = async () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .image-browser {
-  width: 100%;
-  height: 300px; /* Adjust height to match the style in webui.py */
+  flex: 0.7; /* Occupy 70% of the height */
   background: #f5f5f5;
   border: 1px solid #dcdcdc;
   border-radius: 8px;
@@ -209,20 +203,6 @@ const handleGenerate = async () => {
   height: 100%;
   padding: 10px;
   overflow-y: auto;
-}
-
-.image-item {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #f5f7fa;
-}
-
-.image-item :deep(.el-image) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
 }
 
 .image-placeholder {
@@ -254,12 +234,5 @@ const handleGenerate = async () => {
   flex: 3;
   height: auto;
   white-space: nowrap;
-}
-
-.checkbox-section {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-start;
-  align-items: center;
 }
 </style>

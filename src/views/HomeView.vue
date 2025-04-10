@@ -1,21 +1,33 @@
 <template>
   <div class="home-view">
-    <div :class="['generator-container', { 'with-advanced': showAdvancedSettings }]">
-      <Generator 
-        v-model="showAdvancedSettings"
-        :params="generatorParams"
-        :styles="styles"
-        :models="models"
-        :configs="configs"
-        @update:params="updateParams"
-        @generated="handleGenerated"
-      />
+    <div :class="['main-container', { 'with-advanced': showAdvancedSettings }]">
+      <!-- Left Side: Generator, Checkboxes, and InputImagePanel -->
+      <div class="left-side">
+        <div :class="['generator-container', { 'with-input-panel': showInputImagePanel }]">
+          <Generator
+            :params="generatorParams"
+            :styles="styles"
+            :models="models"
+            :configs="configs"
+            @update:params="updateParams"
+            @generated="handleGenerated"
+          />
+          <!-- Checkbox Panel -->
+          <div class="checkbox-panel">
+            <el-checkbox v-model="showInputImagePanel">Input Image</el-checkbox>
+            <el-checkbox v-model="showAdvancedSettings">Advanced</el-checkbox>
+          </div>
+        </div>
+        <div v-if="showInputImagePanel" class="input-image-panel-wrapper">
+          <InputImagePanel />
+        </div>
+      </div>
+
+      <!-- Right Side: AdvancedSettings -->
+      <div v-if="showAdvancedSettings" class="advanced-settings">
+        <AdvancedSettings :params="generatorParams" :configs="configs" />
+      </div>
     </div>
-    <AdvancedSettings
-      v-if="showAdvancedSettings"
-      :params="generatorParams"
-      :configs="configs"
-    />
   </div>
 </template>
 
@@ -24,13 +36,17 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import Generator from '@/components/Generator.vue'
 import AdvancedSettings from '@/components/AdvancedSettings.vue'
+import InputImagePanel from '@/components/InputImagePanel.vue'
 import ImageGrid from '@/components/ImageGrid.vue'
 import { fetchEventSource } from '@/utils/api'
 import type { GenerateParams } from '@/types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
+const showInputImagePanel = ref(false)
 const showAdvancedSettings = ref(false)
+const inputImageEnabled = ref(false) // State for Input Image checkbox
+const enhanceEnabled = ref(false) // State for Enhance checkbox
 const styles = ref([])
 const models = ref({ base_models: [], refiner_models: [], loras: [] })
 const configs = ref({})
@@ -139,45 +155,67 @@ watch(() => configs.value?.performance_selections, () => {
   display: flex;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+.main-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.main-container.with-advanced {
+  flex: 1;
+}
+
+.left-side {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  transition: flex 0.3s ease;
+}
+
+.main-container.with-advanced .left-side {
+  flex: 0.7; /* Left side occupies 70% when AdvancedSettings is visible */
 }
 
 .generator-container {
   flex: 1;
-  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  transition: flex 0.3s ease;
 }
 
-.generator-container.with-advanced {
-  flex: 0.7; /* Adjust width when AdvancedSettings is visible */
+.generator-container.with-input-panel {
+  flex: 0.7; /* Generator occupies 70% when InputImagePanel is visible */
+}
+
+.checkbox-panel {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px;
+  background: #f9f9f9;
+  border-top: 1px solid #dcdcdc;
+  width: 100%; /* Align width with generator-container */
+}
+
+.input-image-panel-wrapper {
+  flex: 0.3; /* InputImagePanel occupies 30% when visible */
+  overflow-y: auto;
+  background: #f9f9f9;
+  border-top: 1px solid #dcdcdc;
+  transition: flex 0.3s ease;
 }
 
 .advanced-settings {
-  flex: 0.3; /* Adjust width for AdvancedSettings */
-  height: 100%;
+  flex: 0.3; /* Right side occupies 30% */
+  height: 100%; /* Full height of the browser */
   background: #f5f5f5;
   border-left: 1px solid #dcdcdc;
-  transition: width 0.3s ease;
-}
-
-.preview-section, .results-section, .gallery-section {
-  margin: 20px 0;
-  width: 100%;
-}
-
-.preview-image {
-  max-width: 100%;
-  border-radius: 8px;
-}
-
-.progress-bar {
-  width: 100%;
-  padding: 10px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.progress-text {
-  text-align: center;
-  color: #606266;
+  overflow-y: auto;
+  transition: flex 0.3s ease;
 }
 </style>
