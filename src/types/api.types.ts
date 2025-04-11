@@ -1,3 +1,4 @@
+// API Request/Response Types
 export interface GenerateParams {
     prompt: string
     negative_prompt: string
@@ -11,8 +12,9 @@ export interface GenerateParams {
     base_model_name: string
     refiner_model_name: string
     loras: Array<{ name: string; weight: number }>
-    input_image: string | null
+    input_image: string | null  // Base64 encoded image string or null
     uov_method: string | null
+    image_prompt?: ImagePromptParams;
 }
 
 export interface GenerateResponse {
@@ -20,6 +22,13 @@ export interface GenerateResponse {
     detail?: string;
 }
 
+export interface APIResponse {
+    status: 'ok' | 'error'
+    message?: string
+    data?: any
+}
+
+// SSE Event Types
 export interface SSEPreviewData {
     percentage: number
     title: string
@@ -38,4 +47,11 @@ export interface SSEFinishData {
 export interface SSEEvent {
     event: 'preview' | 'results' | 'finish'
     data: SSEPreviewData | SSEResultsData | SSEFinishData
+}
+
+// Feature-specific Types
+export interface ImagePromptParams {
+    style_image?: string | null;
+    target_image?: string | null;
+    prompt_method: 'style' | 'target' | 'mixed';
 }

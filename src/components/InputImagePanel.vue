@@ -2,13 +2,13 @@
   <div class="input-image-panel">
     <el-tabs v-model="activeTab" class="tabs-container">
       <el-tab-pane label="Upscale or Variation" name="upscale">
-        <UpscaleOrVariationTab />
+        <UpscaleOrVariationTab @update:image="handleImageUpdate" />
       </el-tab-pane>
       <el-tab-pane label="Image Prompt" name="image-prompt">
-        <ImagePromptTab />
+        <ImagePromptTab @update:image="handleImageUpdate" />
       </el-tab-pane>
       <el-tab-pane label="Inpaint or Outpaint" name="inpaint-outpaint">
-        <InpaintOrOutpaintTab />
+        <InpaintOrOutpaintTab @update:image="handleImageUpdate" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -21,10 +21,17 @@ import ImagePromptTab from '@/components/tabs/ImagePromptTab.vue'
 import InpaintOrOutpaintTab from '@/components/tabs/InpaintOrOutpaintTab.vue'
 
 const activeTab = ref('upscale') // Default active tab
+
+const emit = defineEmits<{
+  (e: 'update:image', value: string | null): void
+}>()
+
+const handleImageUpdate = (image: string | null) => {
+  emit('update:image', image)
+}
 </script>
 
 <style scoped>
-/* filepath: d:\Workspace\FooocusUI\src\components\InputImagePanel.vue */
 .input-image-panel {
   display: flex;
   flex-direction: column;

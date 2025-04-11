@@ -59,6 +59,7 @@ import { reactive, watch, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { GenerateParams } from '../types'
 import { generationStore } from '@/stores/generationStore'
+import { api } from '@/services/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
@@ -98,25 +99,11 @@ const handleGenerate = async () => {
   }
 
   try {
-    console.log('Creating generation task...')
-    const createTaskResponse = await fetch(`${API_BASE_URL}/api/create_task`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(localParams)
-    })
-
-    if (!createTaskResponse.ok) {
-      throw new Error('Failed to create generation task')
-    }
-
-    const { status } = await createTaskResponse.json()
+    const { status } = await api.createTask(localParams)
     if (status !== 'ok') {
       throw new Error('Task creation failed')
     }
 
-    console.log('Task created successfully. Starting SSE...')
     const eventSource = new EventSource(`${API_BASE_URL}/api/generate`)
 
     generationStore.state.isGenerating = true

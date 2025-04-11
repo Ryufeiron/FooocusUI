@@ -19,13 +19,20 @@
           </div>
         </div>
         <div v-if="showInputImagePanel" class="input-image-panel-wrapper">
-          <InputImagePanel />
+          <InputImagePanel
+            :input-image="generatorParams.input_image"
+            @update:input-image="(value) => (generatorParams.input_image = value)"
+          />
         </div>
       </div>
 
       <!-- Right Side: AdvancedSettings -->
       <div v-if="showAdvancedSettings" class="advanced-settings">
-        <AdvancedSettings :params="generatorParams" :configs="configs" />
+        <AdvancedSettings
+          :params="generatorParams"
+          :configs="configs"
+          @update:params="updateParams"
+        />
       </div>
     </div>
   </div>
@@ -37,15 +44,13 @@ import { ElMessage } from 'element-plus'
 import Generator from '@/components/Generator.vue'
 import AdvancedSettings from '@/components/AdvancedSettings.vue'
 import InputImagePanel from '@/components/InputImagePanel.vue'
-import ImageGrid from '@/components/ImageGrid.vue'
-import { fetchEventSource } from '@/utils/api'
+import { api } from '@/services/api'
 import type { GenerateParams } from '@/types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
 const showInputImagePanel = ref(false)
 const showAdvancedSettings = ref(false)
-const inputImageEnabled = ref(false) // State for Input Image checkbox
 const enhanceEnabled = ref(false) // State for Enhance checkbox
 const styles = ref([])
 const models = ref({ base_models: [], refiner_models: [], loras: [] })
@@ -110,8 +115,10 @@ const handleGenerated = (data: any) => {
   }
 }
 
-// Load initial data
-onMounted(async () => {
+const MAX_RETRIES = 3
+const RETRY_DELAY = 2000 // 2 seconds
+
+const loadInitialData = async (retryCount = 0) => {
   try {
     const [stylesRes, modelsRes, configsRes] = await Promise.all([
       fetch(`${API_BASE_URL}/api/styles`),
@@ -119,16 +126,22 @@ onMounted(async () => {
       fetch(`${API_BASE_URL}/api/configs`)
     ])
 
+    // Check each response individually
     if (!stylesRes.ok || !modelsRes.ok || !configsRes.ok) {
-      throw new Error('Failed to fetch data from API')
+      throw new Error(`API Error: ${!stylesRes.ok ? 'Styles ' : ''}${!modelsRes.ok ? 'Models ' : ''}${!configsRes.ok ? 'Configs ' : ''}failed to load`)
     }
     
-    const configData = await configsRes.json()
-    styles.value = (await stylesRes.json()).styles
-    models.value = await modelsRes.json()
+    const [stylesData, modelsData, configData] = await Promise.all([
+      stylesRes.json(),
+      modelsRes.json(),
+      configsRes.json()
+    ])
+
+    styles.value = stylesData.styles
+    models.value = modelsData
     configs.value = configData
 
-    // 强制设置为 Speed，忽略服务端配置
+    // Set default values
     generatorParams.performance_selection = 'Speed'
     generatorParams.aspect_ratios_selection = configData.aspect_ratios[0] || '1152×896'
     generatorParams.base_model_name = models.value.base_models[0] || ''
@@ -136,10 +149,23 @@ onMounted(async () => {
     generatorParams.guidance_scale = parseFloat(configData.default_settings.guidance_scale || 4.0)
     generatorParams.sharpness = parseFloat(configData.default_settings.sharpness || 2.0)
     generatorParams.negative_prompt = configData.default_settings.negative_prompt || ''
+
   } catch (error: any) {
     console.error('API Error:', error)
-    ElMessage.error(`Failed to load initial data: ${error.message}`)
+    
+    // Retry logic
+    if (retryCount < MAX_RETRIES) {
+      ElMessage.warning(`Connection failed, retrying... (${retryCount + 1}/${MAX_RETRIES})`)
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+      return loadInitialData(retryCount + 1)
+    }
+
+    ElMessage.error(`Failed to load initial data: Please check if the API server is running at ${API_BASE_URL}`)
   }
+}
+
+onMounted(() => {
+  loadInitialData()
 })
 
 // 添加监听确保值不被改变
