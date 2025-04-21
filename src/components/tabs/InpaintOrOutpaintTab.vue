@@ -2,7 +2,7 @@
   <div class="tab-content">
     <div class="upload-section">
       <CustomImage
-        v-model="uploadedImage"
+        v-model="inpaint_image"
         label="Upload Image"
         :allow-upload="true"
         :allow-drag="true"
@@ -51,18 +51,18 @@ const emit = defineEmits<{
   (e: 'update', value: any): void
 }>()
 
-const uploadedImage = ref<string | null>(null) // Uploaded image
+const inpaint_image = ref<string | null>(null) // Uploaded image
 const modes = inpaintOptions // Modes for Inpaint or Outpaint
 const mode = ref(modes[0]) // Default selected mode
 const strength = ref(0.5) // Strength for Inpaint
 const outpaintSelections = ref<string[]>([]) // Selections for Outpaint
 
-watch([uploadedImage, mode, strength, outpaintSelections], () => {
+watch([inpaint_image, mode, strength, outpaintSelections], () => {
   emit('update', {
-    mode: mode.value,
-    strength: strength.value,
-    selections: outpaintSelections.value,
-    uploadedImage: uploadedImage.value
+    'mode': mode.value,
+    'strength': strength.value,
+    'selections': outpaintSelections.value,
+    'inpaint_image': inpaint_image.value
   })
 })
 </script>

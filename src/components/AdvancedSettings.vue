@@ -1,18 +1,9 @@
-<script setup lang="ts">
-import { defineProps } from 'vue'
-
-const props = defineProps<{
-  params: any
-  configs: any
-}>()
-</script>
-
 <template>
   <div class="advanced-settings">
     <div class="header">
       <h3>Advanced Settings</h3>
     </div>
-    <el-form label-position="top">
+    <el-form label-position="top" @update:modelValue="updateParams">
       <el-form-item label="Performance" for="performance-select">
         <el-select
           id="performance-select"
@@ -75,6 +66,35 @@ const props = defineProps<{
     </el-form>
   </div>
 </template>
+
+<script setup lang="ts">
+import { GenerateParams } from '@/types/api.types';
+import { defineProps, watch, reactive } from 'vue'
+
+const props = defineProps<{
+  params: GenerateParams
+
+  styles: any[] 
+  models: any
+  configs: any
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:params', value: Partial<GenerateParams>): void
+  (e: 'update:styles', value: string[]): void
+  (e: 'update:models', value: any): void
+  (e: 'update:configs', value: any): void
+}>()
+
+const localParams = reactive({ ...props.params })
+watch(() => props.params, (newParams) => {
+  Object.assign(localParams, newParams)
+}, { deep: true })
+
+const updateParams = () => {
+  emit('update:params', localParams)
+}
+</script>
 
 <style scoped>
 .advanced-settings {

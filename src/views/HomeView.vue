@@ -6,22 +6,19 @@
         <div :class="['generator-container', { 'with-input-panel': showInputImagePanel }]">
           <Generator
             :params="generatorParams"
-            :styles="styles"
-            :models="models"
-            :configs="configs"
             @update:params="updateParams"
             @generated="handleGenerated"
           />
           <!-- Checkbox Panel -->
           <div class="checkbox-panel">
-            <el-checkbox v-model="showInputImagePanel">Input Image</el-checkbox>
+            <el-checkbox v-model="generatorParams.input_image_checkbox">Input Image</el-checkbox>
             <el-checkbox v-model="showAdvancedSettings">Advanced</el-checkbox>
           </div>
         </div>
-        <div v-if="showInputImagePanel" class="input-image-panel-wrapper">
+        <div v-if="generatorParams.input_image_checkbox" class="input-image-panel-wrapper">
           <InputImagePanel
-            :input-image="generatorParams.input_image"
-            @update:input-image="(value) => (generatorParams.input_image = value)"
+          :params="generatorParams"
+          @update:params="updateParams"
           />
         </div>
       </div>
@@ -31,6 +28,8 @@
         <AdvancedSettings
           :params="generatorParams"
           :configs="configs"
+          :styles="styles"
+          :models="models"
           @update:params="updateParams"
         />
       </div>
@@ -39,22 +38,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import Generator from '@/components/Generator.vue'
 import AdvancedSettings from '@/components/AdvancedSettings.vue'
 import InputImagePanel from '@/components/InputImagePanel.vue'
 import { api } from '@/services/api'
-import type { GenerateParams } from '@/types'
+import type { GenerateParams } from '@/types/api.types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
 const showInputImagePanel = ref(false)
 const showAdvancedSettings = ref(false)
 const enhanceEnabled = ref(false) // State for Enhance checkbox
-const styles = ref([])
-const models = ref({ base_models: [], refiner_models: [], loras: [] })
 const configs = ref({})
+const styles = ref([])
+const models = ref([])
 const generatorParams = reactive<GenerateParams>({
   prompt: '',
   negative_prompt: '',
@@ -68,8 +67,29 @@ const generatorParams = reactive<GenerateParams>({
   base_model_name: '',
   refiner_model_name: 'None',
   loras: [],
-  input_image: null,
-  uov_method: null
+  input_image_checkbox: false,
+  current_tab: 'uov', // Default tab
+  uov_input_image: null,
+  uov_method: 'Disabled',
+
+  // ControlNet Parameters
+  // controlnet_softness: 0.5,
+  // canny_low_threshold: 100,
+  // canny_high_threshold: 200,
+
+  // FreeU Parameters
+  // freeu_enabled: false,
+  // freeu_b1: 0,
+  // freeu_b2: 0,
+  // freeu_s1: 0,
+  // freeu_s2: 0,
+
+  // Inpainting Parameters
+  // inpaint_engine: null,
+  // inpaint_mask: null,
+  inpaint_strength: 0.5,
+  // inpaint_respective_field: 0.5,
+  inpaint_input_image: null
 })
 
 // 添加状态变量
@@ -115,10 +135,7 @@ const handleGenerated = (data: any) => {
   }
 }
 
-const MAX_RETRIES = 3
-const RETRY_DELAY = 2000 // 2 seconds
-
-const loadInitialData = async (retryCount = 0) => {
+onMounted(async () => {
   try {
     const [stylesRes, modelsRes, configsRes] = await Promise.all([
       fetch(`${API_BASE_URL}/api/styles`),
@@ -136,44 +153,23 @@ const loadInitialData = async (retryCount = 0) => {
       modelsRes.json(),
       configsRes.json()
     ])
-
-    styles.value = stylesData.styles
-    models.value = modelsData
     configs.value = configData
+    styles.value = stylesData.styles
+    models.value = modelsData.base_models
 
     // Set default values
     generatorParams.performance_selection = 'Speed'
     generatorParams.aspect_ratios_selection = configData.aspect_ratios[0] || '1152×896'
-    generatorParams.base_model_name = models.value.base_models[0] || ''
+    generatorParams.base_model_name = modelsData.base_models[0] || ''
     generatorParams.style_selections = configData.default_settings.style_selections || []
     generatorParams.guidance_scale = parseFloat(configData.default_settings.guidance_scale || 4.0)
     generatorParams.sharpness = parseFloat(configData.default_settings.sharpness || 2.0)
     generatorParams.negative_prompt = configData.default_settings.negative_prompt || ''
-
   } catch (error: any) {
     console.error('API Error:', error)
-    
-    // Retry logic
-    if (retryCount < MAX_RETRIES) {
-      ElMessage.warning(`Connection failed, retrying... (${retryCount + 1}/${MAX_RETRIES})`)
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-      return loadInitialData(retryCount + 1)
-    }
-
     ElMessage.error(`Failed to load initial data: Please check if the API server is running at ${API_BASE_URL}`)
   }
-}
-
-onMounted(() => {
-  loadInitialData()
 })
-
-// 添加监听确保值不被改变
-watch(() => configs.value?.performance_selections, () => {
-  if (generatorParams.performance_selection !== 'Speed') {
-    generatorParams.performance_selection = 'Speed'
-  }
-}, { immediate: true })
 </script>
 
 <style scoped>

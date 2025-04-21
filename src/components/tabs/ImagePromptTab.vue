@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import CustomImage from '@/components/CustomImage.vue'
 import { ipList, defaultIp, defaultParameters } from '@/stores/flags'
 
@@ -81,6 +81,19 @@ const ipStops = ref(ipImages.value.map(() => defaultParameters[defaultIp][0]))
 const ipWeights = ref(ipImages.value.map(() => defaultParameters[defaultIp][1]))
 const ipTypeChoices = ipList
 const advancedMode = ref(false)
+
+const emit = defineEmits<{
+  (e: 'update', value: { ipImages: string[]; ipTypes: string[]; ipStops: number[]; ipWeights: number[] }): void
+}>()  
+
+watch([ipImages, ipTypes, ipStops, ipWeights], ([newImages, newTypes, newStops, newWeights]) => {
+  emit('update', {
+    'ipImages': newImages,
+    'ipTypes': newTypes,
+    'ipStops': newStops,
+    'ipWeights': newWeights
+  })
+})
 
 const handleAdvancedModeChange = () => {
   if (!advancedMode.value) {

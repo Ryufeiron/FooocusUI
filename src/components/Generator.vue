@@ -3,7 +3,7 @@
     <!-- Image Browser -->
     <div class="image-browser">
       <div v-if="generationStore.state.results.length" class="image-grid">
-        <div v-for="(image, index) in generationStore.state.results" 
+        <div v-for="(image, index) in generationStore.state.results"
              :key="`${index}-${generationStore.state.version}`" 
              class="image-item"
              draggable="true"
@@ -55,9 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, ref } from 'vue'
+import { reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { GenerateParams } from '../types'
+import type { GenerateParams } from '@/types/api.types'
 import { generationStore } from '@/stores/generationStore'
 import { api } from '@/services/api'
 
@@ -65,21 +65,18 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866
 
 const props = defineProps<{
   params: GenerateParams
-  styles: any[] 
-  models: any
-  configs: any
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'update:params', value: Partial<GenerateParams>): void
-  (e: 'update:styles', value: string[]): void
-  (e: 'update:models', value: any): void
-  (e: 'update:configs', value: any): void
   (e: 'generated', data: any): void
 }>()
 
 const localParams = reactive({ ...props.params })
+watch(() => props.params, (newParams) => {
+  Object.assign(localParams, newParams)
+}, { deep: true })
 
 const updateParams = () => {
   emit('update:params', localParams)
@@ -93,10 +90,7 @@ const getImageUrl = (path: string) => {
 }
 
 const handleGenerate = async () => {
-  if (!localParams.prompt) {
-    ElMessage.warning('Please enter a prompt')
-    return
-  }
+  console.log('Generate button clicked with params:', localParams)
 
   try {
     const { status } = await api.createTask(localParams)

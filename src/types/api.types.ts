@@ -12,9 +12,35 @@ export interface GenerateParams {
     base_model_name: string
     refiner_model_name: string
     loras: Array<{ name: string; weight: number }>
-    input_image: string | null  // Base64 encoded image string or null
-    uov_method: string | null
-    image_prompt?: ImagePromptParams;
+    input_image_checkbox: boolean
+    current_tab: string
+    uov_method: string
+    uov_input_image: string | null
+
+    // Advanced Parameters
+    // clip_skip: number
+    // sampler: string
+    // scheduler: string
+    // vae: string
+
+    // ControlNet Parameters
+    // controlnet_softness: number
+    // canny_low_threshold: number
+    // canny_high_threshold: number
+
+    // FreeU Parameters
+    // freeu_enabled: boolean
+    // freeu_b1: number
+    // freeu_b2: number
+    // freeu_s1: number
+    // freeu_s2: number
+
+    // Inpainting Parameters
+    // inpaint_engine: string | null
+    // inpaint_mask: string | null
+    inpaint_strength: number
+    // inpaint_respective_field: number
+    inpaint_input_image: string | null
 }
 
 export interface GenerateResponse {

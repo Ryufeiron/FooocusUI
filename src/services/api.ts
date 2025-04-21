@@ -1,4 +1,4 @@
-import type { GenerateParams, SSEEvent, APIResponse } from '@/types'
+import type { GenerateParams, SSEEvent, APIResponse } from '@/types/api.types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7866'
 
@@ -54,14 +54,6 @@ export async function fetchEventSource(url: string, params: GenerateParams, call
 
 // Regular API endpoints with type safety
 export const api = {
-    generate: async (params: GenerateParams): Promise<APIResponse> => {
-        return fetch(`${API_BASE_URL}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(params)
-        }).then(handleResponse)
-    },
-
     getStyles: async (): Promise<string[]> => {
         return fetch(`${API_BASE_URL}/api/styles`)
             .then(handleResponse)
@@ -85,4 +77,12 @@ export const api = {
             body: JSON.stringify(params)
         }).then(handleResponse)
     },
+
+    generate: async (params: GenerateParams): Promise<APIResponse> => {
+        return fetch(`${API_BASE_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
+        }).then(handleResponse)
+    }
 }

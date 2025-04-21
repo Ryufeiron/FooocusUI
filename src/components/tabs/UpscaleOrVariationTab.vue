@@ -3,7 +3,7 @@
     <div class="upload-section">
       <div class="left-panel">
         <CustomImage
-          v-model="uploadedImage"
+          v-model="uov_input_image"
           @update:modelValue="handleImageUpload"
           label="Image"
           :allow-upload="true"
@@ -16,7 +16,7 @@
       <div class="right-panel">
         <div>
           <label class="radio-group-label">Upscale or Variation:</label>
-          <el-radio-group v-model="uovMethod" class="uov-method">
+          <el-radio-group v-model="uov_method" class="uov-method">
             <el-radio
               v-for="method in uovMethods"
               :key="method"
@@ -43,21 +43,21 @@ import CustomImage from '@/components/CustomImage.vue'
 import { uovList } from '@/stores/flags' // Import uov_list from flags.js
 
 const emit = defineEmits<{
-  (e: 'update', value: { uovMethod: string; uploadedImage: string | null }): void
+  (e: 'update', value: { uov_method: string; uov_input_image: string | null }): void
   (e: 'update:image', value: string | null): void
 }>()
 
-const uploadedImage = ref<string | null>(null) // Uploaded image
+const uov_input_image = ref<string | null>(null) // Uploaded image
 const uovMethods = ref(uovList) // Dynamically load choices from flags.js
-const uovMethod = ref(uovList[0]) // Default value matches the first item in uov_list
+const uov_method = ref(uovList[0]) // Default value matches the first item in uov_list
 
 const handleImageUpload = (image: string | null) => {
-  uploadedImage.value = image
+  uov_input_image.value = image
   emit('update:image', image)
 }
 
-watch([uploadedImage, uovMethod], ([newImage, newMethod]) => {
-  emit('update', { uovMethod: newMethod, uploadedImage: newImage })
+watch([uov_input_image, uov_method], ([newImage, newMethod]) => {
+  emit('update', { 'uov_method': newMethod, 'uov_input_image': newImage })
 })
 </script>
 
